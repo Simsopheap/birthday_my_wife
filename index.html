@@ -92,7 +92,7 @@
 
   .hb {
     font-family: 'Pacifico', cursive;
-    font-size: clamp(.85rem, 2.5vw, 1.5rem);
+    font-size: clamp(1.05rem, 2.8vw, 1.6rem);
     color: #FFD700;
     animation: bob 1.8s ease-in-out infinite
   }
@@ -210,9 +210,15 @@
     transform: scale(.97)
   }
 
+  .btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none
+  }
+
   .fwmsg {
     position: absolute;
-    top: 10px;
+    top: 40px;
     left: 50%;
     transform: translateX(-50%);
     font-family: 'Kantumruy Pro', sans-serif;
@@ -223,6 +229,7 @@
     pointer-events: none;
     transition: opacity .5s;
     z-index: 20;
+    font-size: clamp(.85rem, 2.5vw, 1.2rem);
     text-shadow: 0 0 20px rgba(255, 215, 0, .8)
   }
 
@@ -395,7 +402,7 @@
   <div class="ribbon"></div>
   <div class="stars" id="stars"></div>
   <canvas id="c"></canvas>
-  <div class="fwmsg" id="fm">✨ រីករាយថ្ងៃកំណើតប្រពន្ធសម្លាញ់! ✨</div>
+  <div class="fwmsg" id="fm">✨ រីករាយថ្ងៃកំណើតអូនសម្លាញ់! ✨</div>
 
   <div class="msgbox" id="msgbox">
     <div class="card">
@@ -448,7 +455,7 @@
         <polyline points="79,54 48,34" stroke="#c084fc" stroke-width="1" fill="none" />
       </svg>
     </div>
-    <button class="btn" onclick="celebrate()">🎊 Celebrate!</button>
+    <button class="btn" id="celebBtn" onclick="celebrate()">🎊 Celebrate!</button>
   </div>
 </div>
 
@@ -486,14 +493,11 @@
   }
 
   function closeMsg() {
-    // hide message box
     document.getElementById('msgbox').classList.remove('show');
-    // also close envelope flap
     envOpen = false;
     document.getElementById('env').classList.remove('open');
   }
 
-  // click backdrop to close
   document.getElementById('msgbox').addEventListener('click', function (e) {
     if (e.target === this) closeMsg();
   });
@@ -503,16 +507,41 @@
     for (let i = 0; i < 18; i++)setTimeout(() => { const el = document.createElement('div'); el.className = 'ce'; el.textContent = em[~~(Math.random() * em.length)]; el.style.left = rnd(2, 95) + '%'; el.style.animationDuration = rnd(2.5, 4.5) + 's'; el.style.animationDelay = rnd(0, .3) + 's'; wrap.appendChild(el); el.addEventListener('animationend', () => el.remove()) }, i * 90)
   }
 
+  const CELEBRATE_DURATION = 3500; // ms for fireworks before dialog shows
+
   function celebrate() {
-    const fm = document.getElementById('fm'); fm.classList.add('show'); setTimeout(() => fm.classList.remove('show'), 2600);
-    for (let i = 0; i < 10; i++)setTimeout(() => spark(rnd(W * .1, W * .9), rnd(H * .1, H * .65), 20), i * 100);
+    const btn = document.getElementById('celebBtn');
+    btn.disabled = true;
+
+    const fm = document.getElementById('fm');
+    fm.classList.add('show');
+    setTimeout(() => fm.classList.remove('show'), 2400);
+
+    // fireworks + confetti burst — NO dialog yet
+    for (let i = 0; i < 14; i++)setTimeout(() => spark(rnd(W * .05, W * .95), rnd(H * .05, H * .7), 22), i * 120);
     dropConfetti();
-    if (!envOpen) toggleEnv();
-    let t = 0; const iv = setInterval(() => { t++; const sc = 1 + .28 * Math.sin(t * .5);['f1', 'f2', 'f3'].forEach(id => { const el = document.getElementById(id); if (el) el.setAttribute('ry', String(5 * sc)) }); if (t > 60) clearInterval(iv) }, 50)
+
+    // flame animation
+    let t = 0; const iv = setInterval(() => { t++; const sc = 1 + .28 * Math.sin(t * .5);['f1', 'f2', 'f3'].forEach(id => { const el = document.getElementById(id); if (el) el.setAttribute('ry', String(5 * sc)) }); if (t > 60) clearInterval(iv) }, 50);
+
+    // after celebration finishes → open envelope + show dialog
+    setTimeout(() => {
+      if (!envOpen) {
+        envOpen = true;
+        document.getElementById('env').classList.add('open');
+        const r = document.getElementById('env').getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+        spark(r.left - wr.left + r.width / 2, r.top - wr.top + r.height / 2, 20);
+      }
+      setTimeout(() => {
+        openMsg();
+        btn.disabled = false;
+      }, 450);
+    }, CELEBRATE_DURATION);
   }
 
   wrap.addEventListener('mousemove', e => { if (Math.random() < .12) { const r = wrap.getBoundingClientRect(); spark(e.clientX - r.left, e.clientY - r.top, 2) } });
   wrap.addEventListener('click', e => { if (e.target.closest('.btn') || e.target.closest('.env') || e.target.closest('.msgbox')) return; const r = wrap.getBoundingClientRect(); spark(e.clientX - r.left, e.clientY - r.top, 10) });
 
+  // auto open envelope on load
   setTimeout(() => { if (!envOpen) toggleEnv() }, 800);
 </script>
